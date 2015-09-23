@@ -85,12 +85,19 @@ module ChefProvisioningVsphere
         raise("vSphere Datacenter not found [#{datacenter_name}]")
     end
 
-    def network_adapter_for(operation, network_name, network_label, device_key, backing_info)
+    def network_adapter_for(operation, network_name, network_label, device_key, backing_info, nic_type)
+      case nic_type.downcase
+      when 'e1000e'
+        nic_klass = RbVmomi::VIM::VirtualE1000e
+      else
+        nic_klass = RbVmomi::VIM::VirtualVmxnet3
+      end
+
       connectable = RbVmomi::VIM::VirtualDeviceConnectInfo(
         :allowGuestControl => true,
         :connected => true,
         :startConnected => true)
-      device = RbVmomi::VIM::VirtualVmxnet3(
+      device = nic_klass.new(
         :backing => backing_info,
         :deviceInfo => RbVmomi::VIM::Description(:label => network_label, :summary => network_name.split('/').last),
         :key => device_key,
@@ -185,18 +192,21 @@ module ChefProvisioningVsphere
       networks.each_index do | i |
         label = "Ethernet #{i+1}"
         backing_info = backing_info_for(action_handler, networks[i])
+        nic_type = options[:nic_type] || 'vmxnet3'
         if card = cards.shift
           key = card.key
           operation = RbVmomi::VIM::VirtualDeviceConfigSpecOperation('edit')
           action_handler.report_progress "changing template nic for #{networks[i]}"
           changes.push(
-            network_adapter_for(operation, networks[i], label, key, backing_info))
+            network_adapter_for(operation, networks[i], label, key, backing_info,
+                               nic_type))
         else
           key = key + 1
           operation = RbVmomi::VIM::VirtualDeviceConfigSpecOperation('add')
           action_handler.report_progress "will be adding nic for #{networks[i]}"
           additions.push(
-            network_adapter_for(operation, networks[i], label, key, backing_info))
+            network_adapter_for(operation, networks[i], label, key, backing_info,
+                                nic_type))
         end
       end
       [additions, changes]

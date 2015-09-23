@@ -103,6 +103,7 @@ This will use chef-zero and needs no chef server (only works for ssh). Note that
 - `[:customization_spec][:product_id]` - windows product key
 - `[:customization_spec][:time_zone]` - The case-sensitive timezone, such as Europe/Sofia based on the tz (timezone) database used by Linux and other Unix systems
 - `[:customization_spec][:win_time_zone]` - numeric time zone for windows
+- `[:nic_type]` - type of ethernet adapter, currently 'e1000e' or 'vmxnet3'. Defaults to 'vmxnet3' (vmxnet3 is unsupported on OS X)
 
 ## Timeout options
 These are settings set at the root of `machine_options`. Chances are the defaults for these settings do not need to be changed:
